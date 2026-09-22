@@ -169,12 +169,45 @@ function parseResponse(value) {
 }
 
 /**
- * Normalized test options produced from validated query parameters.
+ * Reads the `response` payload from the request body.
+ *
+ * Falls back to the default response when the body is absent or does not
+ * carry a `response` field. Because the body is already parsed JSON, the value
+ * is used as-is — no string re-parsing is required, unlike the query-string
+ * variant.
+ *
+ * @param {*} body - The parsed request body (`req.body`).
+ * @returns {*} The response payload (any JSON value, or the default).
+ * @throws {import('../../utils/Error/ApiError.js').ApiError} When the body is
+ *    present but is not a plain JSON object.
+ */
+function parseBodyResponse(body) {
+  if (body === undefined || body === null) {
+    return TEST_DEFAULTS.RESPONSE;
+  }
+
+  if (typeof body !== 'object' || Array.isArray(body)) {
+    throw new ApiError(
+      'request body must be a JSON object',
+      400,
+      'INVALID_BODY',
+    );
+  }
+
+  if (body === undefined) {
+    return TEST_DEFAULTS.RESPONSE;
+  }
+
+  return body;
+}
+
+/**
+ * Normalized test options describing a simulated response.
  *
  * @typedef {Object} TestQueryOptions
  * @property {number} delaySeconds - Simulated delay in seconds before responding.
  * @property {number} statusCode - HTTP status code to return to the client.
- * @property {*} response - Response payload (parsed JSON or plain string).
+ * @property {*} response - Response payload (query string, request body, or the default).
  */
 
 /**
@@ -186,7 +219,7 @@ function parseResponse(value) {
  * @param {object} query - The raw query string (`req.query`) from the HTTP request.
  * @param {string|string[]} [query.delay] - Raw `delay` parameter, in seconds.
  * @param {string|string[]} [query.statusCode] - Raw `statusCode` parameter.
- * @param {string|string[]} [query.response] - Raw `response` parameter.
+ * @param {string|string[]} [query.payload] - Raw `payload` parameter.
  * @returns {TestQueryOptions} A frozen, normalized set of test options.
  * @throws {import('../../utils/Error/ApiError.js').ApiError} When any parameter
  *    is invalid or repeated.
@@ -196,7 +229,36 @@ export function validateTestQuery(query) {
 
   const statusCode = parseStatusCode(query.statusCode);
 
-  const response = parseResponse(query.response);
+  const response = parseResponse(query.payload);
+
+  return Object.freeze({
+    delaySeconds,
+    statusCode,
+    response,
+  });
+}
+
+/**
+ * Validates a mutating test-endpoint request (`PUT`, `PATCH`, `DELETE`).
+ *
+ * `delay` and `statusCode` keep the query-string semantics of the GET
+ * variants, while `response` is read from the JSON request body so callers can
+ * send any JSON value without URL-encoding it. The returned object is frozen
+ * to prevent accidental mutation.
+ *
+ * @param {object} request - The Express request input.
+ * @param {object} request.query - The raw query string (`req.query`).
+ * @param {*} [request.body] - The parsed request body (`req.body`).
+ * @returns {TestQueryOptions} A frozen, normalized set of test options.
+ * @throws {import('../../utils/Error/ApiError.js').ApiError} When a query
+ *    parameter is invalid or repeated, or the body is not a JSON object.
+ */
+export function validateTestMutation({ query, body }) {
+  const delaySeconds = parseDelay(query.delay);
+
+  const statusCode = parseStatusCode(query.statusCode);
+
+  const response = parseBodyResponse(body);
 
   return Object.freeze({
     delaySeconds,

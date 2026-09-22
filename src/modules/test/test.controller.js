@@ -1,6 +1,9 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { ApiResponse } from '../../utils/Response/ApiResponse.js';
-import { validateTestQuery } from './test-query.validator.js';
+import {
+  validateTestMutation,
+  validateTestQuery,
+} from './test-query.validator.js';
 import { validateTestId } from './test-id.validator.js';
 import { executeTest } from './test.service.js';
 
@@ -28,7 +31,7 @@ function sendTestResult(res, result, extra = {}) {
       ...extra,
       success: result.statusCode < 400,
       statusCode: result.statusCode,
-      message: result.response,
+      response: result.response,
       delay: result.delaySeconds,
     }),
   );
@@ -75,29 +78,34 @@ const testController = asyncHandler(testController1);
  * Creates an Express handler for the id-based test endpoints (`/test/:id`).
  *
  * The returned handler validates the `id` path segment via
- * {@link validateTestId}, validates the query string via
- * {@link validateTestQuery}, executes the simulated response through
+ * {@link validateTestId}, normalizes the request through the supplied
+ * `validateRequest` function, executes the simulated response through
  * {@link executeTest}, and echoes `id` back in the response payload. When a
- * `method` is supplied it is echoed too, which is what distinguishes the
- * mutating verbs (PUT, PATCH, DELETE) from the GET variant.
+ * `method` is supplied it is echoed too, distinguishing the mutating verbs
+ * (PUT, PATCH, DELETE) from the GET variant.
  *
  * The returned handler must still be wrapped with {@link asyncHandler} so
  * rejected promises — validation failures or aborted requests — reach the
  * Express error-handling middleware.
  *
  * @function makeTestByIdHandler
- * @param {string} [method] - HTTP method to echo in the response payload.
+ * @param {object} options - Handler options.
+ * @param {string} [options.method] - HTTP method to echo in the response payload.
  *    Omit it for endpoints that should not reflect a method (e.g. GET).
+ * @param {function(import('express').Request): import('./test-query.validator.js').TestQueryOptions}
+ *    options.validateRequest - Normalizes the request into test options
+ *    (query-only for GET, query + body for mutations).
  * @returns {function(
  *    req: import('express').Request,
  *    res: import('express').Response,
  *  ): Promise<import('express').Response>} The id-based request handler.
  */
-function makeTestByIdHandler(method) {
+function makeTestByIdHandler({ method, validateRequest }) {
   return async function handleTestById(req, res) {
     const id = validateTestId(req.params.id);
 
-    const input = validateTestQuery(req.query);
+    const input = validateRequest(req);
+    console.log(`🚀 ~ handleTestById ~ input:`, input);
 
     const result = await executeTest({
       ...input,
@@ -114,41 +122,61 @@ function makeTestByIdHandler(method) {
 /**
  * Express request handler for `GET /test/:id`.
  *
- * Validates and echoes `id` in the response payload.
+ * Reads every option (`delay`, `statusCode`, `response`) from the query
+ * string and echoes `id` in the response payload.
  *
  * @type {import('express').RequestHandler}
  */
-const testByIdController = asyncHandler(makeTestByIdHandler());
+const testByIdController = asyncHandler(
+  makeTestByIdHandler({
+    validateRequest: (req) => validateTestQuery(req.query),
+  }),
+);
 
 /**
  * Express request handler for `PUT /test/:id`.
  *
- * Same behavior as the GET variant, but also echoes `PUT` in the response
- * payload.
+ * Reads `delay` and `statusCode` from the query string and `response` from the
+ * JSON request body; echoes `id` and `PUT` in the response payload.
  *
  * @type {import('express').RequestHandler}
  */
-const putTestByIdController = asyncHandler(makeTestByIdHandler('PUT'));
+const putTestByIdController = asyncHandler(
+  makeTestByIdHandler({
+    method: 'PUT',
+    validateRequest: validateTestMutation,
+  }),
+);
 
 /**
  * Express request handler for `PATCH /test/:id`.
  *
- * Same behavior as the GET variant, but also echoes `PATCH` in the response
- * payload.
+ * Reads `delay` and `statusCode` from the query string and `response` from the
+ * JSON request body; echoes `id` and `PATCH` in the response payload.
  *
  * @type {import('express').RequestHandler}
  */
-const patchTestByIdController = asyncHandler(makeTestByIdHandler('PATCH'));
+const patchTestByIdController = asyncHandler(
+  makeTestByIdHandler({
+    method: 'PATCH',
+    validateRequest: validateTestMutation,
+  }),
+);
 
 /**
  * Express request handler for `DELETE /test/:id`.
  *
- * Same behavior as the GET variant, but also echoes `DELETE` in the response
- * payload.
+ * Reads `delay` and `statusCode` from the query string and `response` from the
+ * JSON request body; echoes `id` and `DELETE` in the response payload.
  *
  * @type {import('express').RequestHandler}
  */
-const deleteTestByIdController = asyncHandler(makeTestByIdHandler('DELETE'));
+const deleteTestByIdController = asyncHandler(
+  makeTestByIdHandler({
+    method: 'DELETE',
+    validateRequest: validateTestMutation,
+  }),
+);
 
 export {
   deleteTestByIdController,

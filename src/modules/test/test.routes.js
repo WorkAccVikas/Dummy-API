@@ -11,9 +11,10 @@ import {
  * Express router for the test endpoints.
  *
  * Handles simulated HTTP responses configured through the query string
- * (status code, payload and delay). The base path and the `:id` path accept
- * GET; the `:id` path additionally accepts PUT, PATCH and DELETE, which echo
- * the request method in the response payload.
+ * (status code and delay). The base path and the `:id` path accept GET. The
+ * `:id` path additionally accepts PUT, PATCH and DELETE, which read their
+ * simulated `response` from the JSON request body and echo the request method
+ * in the response payload.
  *
  * @type {import('express').Router}
  */
@@ -48,8 +49,9 @@ router.get('/:id', testByIdController);
 /**
  * PUT /test/:id
  *
- * Same simulated-response behaviour as `GET /test/:id`, but the response
- * payload also reflects the request method (`PUT`).
+ * `delay` / `statusCode` come from the query string, while the simulated
+ * `response` is read from the JSON request body. The payload also reflects
+ * the request method (`PUT`).
  *
  * @name putTestById
  * @path {PUT} /:id
@@ -60,8 +62,9 @@ router.put('/:id', putTestByIdController);
 /**
  * PATCH /test/:id
  *
- * Same simulated-response behaviour as `GET /test/:id`, but the response
- * payload also reflects the request method (`PATCH`).
+ * `delay` / `statusCode` come from the query string, while the simulated
+ * `response` is read from the JSON request body. The payload also reflects
+ * the request method (`PATCH`).
  *
  * @name patchTestById
  * @path {PATCH} /:id
@@ -72,8 +75,9 @@ router.patch('/:id', patchTestByIdController);
 /**
  * DELETE /test/:id
  *
- * Same simulated-response behaviour as `GET /test/:id`, but the response
- * payload also reflects the request method (`DELETE`).
+ * `delay` / `statusCode` come from the query string, while the simulated
+ * `response` is read from the JSON request body. The payload also reflects
+ * the request method (`DELETE`).
  *
  * @name deleteTestById
  * @path {DELETE} /:id
