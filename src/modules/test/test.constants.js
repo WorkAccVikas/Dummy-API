@@ -2,7 +2,7 @@
  * Default values applied when query parameters are omitted.
  *
  * @typedef {Object} TestDefaults
- * @property {number} DELAY_MS - Default simulated delay in milliseconds.
+ * @property {number} DELAY_SECONDS - Default simulated delay in seconds.
  * @property {number} STATUS_CODE - Default HTTP status code.
  * @property {string} RESPONSE - Default response payload.
  */
@@ -13,27 +13,27 @@
  * @type {TestDefaults}
  */
 export const TEST_DEFAULTS = Object.freeze({
-  DELAY_MS: 0,
+  DELAY_SECONDS: 0,
   STATUS_CODE: 200,
   RESPONSE: 'Request completed successfully',
 });
 
 /**
- * Hard limits imposed on the `delay` query parameter.
+ * Hard limits imposed on the `delay` query parameter, expressed in seconds.
  *
  * @typedef {Object} TestLimits
- * @property {number} MIN_DELAY_MS - Minimum accepted delay in milliseconds.
- * @property {number} MAX_DELAY_MS - Maximum accepted delay in milliseconds.
+ * @property {number} MIN_DELAY_SECONDS - Minimum accepted delay in seconds.
+ * @property {number} MAX_DELAY_SECONDS - Maximum accepted delay in seconds.
  */
 
 /**
- * Hard limits imposed on the `delay` query parameter.
+ * Hard limits imposed on the `delay` query parameter, expressed in seconds.
  *
  * @type {TestLimits}
  */
 export const TEST_LIMITS = Object.freeze({
-  MIN_DELAY_MS: 0,
-  MAX_DELAY_MS: 30_000,
+  MIN_DELAY_SECONDS: 0,
+  MAX_DELAY_SECONDS: 30,
 });
 
 /**

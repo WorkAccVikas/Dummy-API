@@ -38,7 +38,7 @@ async function testController1(req, res) {
 
     message: result.response,
 
-    delay: result.delayMs,
+    delay: result.delaySeconds,
   };
   return res
     .status(result.statusCode)

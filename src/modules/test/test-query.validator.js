@@ -31,35 +31,40 @@ function getSingleValue(value, fieldName) {
 }
 
 /**
- * Parses and validates the `delay` query parameter.
+ * Parses and validates the `delay` query parameter, in seconds.
  *
  * Falls back to the default delay when the parameter is omitted; otherwise
- * requires a non-negative safe integer within the documented limits.
+ * requires a non-negative number (integer or fractional) within the documented
+ * limits.
+ *
+ * The value is kept in seconds so the API contract stays unit-consistent. Unit
+ * conversion to milliseconds is a separate concern handled by the executor
+ * (single responsibility principle).
  *
  * @param {string|string[]|undefined} value - Raw `delay` query parameter value.
- * @returns {number} The validated delay in milliseconds.
+ * @returns {number} The validated delay in seconds.
  * @throws {import('../../utils/Error/ApiError.js').ApiError} When the value is
- *    a duplicate, not a non-negative integer, outside the supported range, or
- *    beyond {@link TEST_LIMITS}.
+ *    a duplicate, not a non-negative number, not finite, or beyond
+ *    {@link TEST_LIMITS}.
  */
 function parseDelay(value) {
   if (value === undefined) {
-    return TEST_DEFAULTS.DELAY_MS;
+    return TEST_DEFAULTS.DELAY_SECONDS;
   }
 
   const rawValue = getSingleValue(value, 'delay');
 
-  if (!/^\d+$/.test(rawValue)) {
+  if (!/^\d+(\.\d+)?$/.test(rawValue)) {
     throw new ApiError(
-      'delay must be a non-negative integer',
+      'delay must be a non-negative number of seconds',
       400,
       'INVALID_DELAY',
     );
   }
 
-  const delayMs = Number(rawValue);
+  const delaySeconds = Number(rawValue);
 
-  if (!Number.isSafeInteger(delayMs)) {
+  if (!Number.isFinite(delaySeconds)) {
     throw new ApiError(
       'delay is outside the supported range',
       400,
@@ -68,17 +73,17 @@ function parseDelay(value) {
   }
 
   if (
-    delayMs < TEST_LIMITS.MIN_DELAY_MS ||
-    delayMs > TEST_LIMITS.MAX_DELAY_MS
+    delaySeconds < TEST_LIMITS.MIN_DELAY_SECONDS ||
+    delaySeconds > TEST_LIMITS.MAX_DELAY_SECONDS
   ) {
     throw new ApiError(
-      `delay must be between ${TEST_LIMITS.MIN_DELAY_MS} and ${TEST_LIMITS.MAX_DELAY_MS} milliseconds`,
+      `delay must be between ${TEST_LIMITS.MIN_DELAY_SECONDS} and ${TEST_LIMITS.MAX_DELAY_SECONDS} seconds`,
       400,
       'DELAY_OUT_OF_RANGE',
     );
   }
 
-  return delayMs;
+  return delaySeconds;
 }
 
 /**
@@ -167,7 +172,7 @@ function parseResponse(value) {
  * Normalized test options produced from validated query parameters.
  *
  * @typedef {Object} TestQueryOptions
- * @property {number} delayMs - Simulated delay in milliseconds before responding.
+ * @property {number} delaySeconds - Simulated delay in seconds before responding.
  * @property {number} statusCode - HTTP status code to return to the client.
  * @property {*} response - Response payload (parsed JSON or plain string).
  */
@@ -179,7 +184,7 @@ function parseResponse(value) {
  * when omitted. The returned object is frozen to prevent accidental mutation.
  *
  * @param {object} query - The raw query string (`req.query`) from the HTTP request.
- * @param {string|string[]} [query.delay] - Raw `delay` parameter.
+ * @param {string|string[]} [query.delay] - Raw `delay` parameter, in seconds.
  * @param {string|string[]} [query.statusCode] - Raw `statusCode` parameter.
  * @param {string|string[]} [query.response] - Raw `response` parameter.
  * @returns {TestQueryOptions} A frozen, normalized set of test options.
@@ -187,14 +192,14 @@ function parseResponse(value) {
  *    is invalid or repeated.
  */
 export function validateTestQuery(query) {
-  const delayMs = parseDelay(query.delay);
+  const delaySeconds = parseDelay(query.delay);
 
   const statusCode = parseStatusCode(query.statusCode);
 
   const response = parseResponse(query.response);
 
   return Object.freeze({
-    delayMs,
+    delaySeconds,
     statusCode,
     response,
   });
