@@ -7,3 +7,5 @@
 4. by id PUT/PATCH/DELETE
 
 5. Change payload from query to body in PUT/PATCH/DELETE for /test/:id
+
+6. Self ping to health check endpoint to check if server is up
