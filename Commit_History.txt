@@ -3,3 +3,5 @@
 2. delay accept in seconds now
 
 3. Get by id
+
+4. by id PUT/PATCH/DELETE

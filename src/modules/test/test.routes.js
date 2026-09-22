@@ -1,12 +1,19 @@
 import { Router } from 'express';
-import { testByIdController, testController } from './test.controller.js';
+import {
+  deleteTestByIdController,
+  patchTestByIdController,
+  putTestByIdController,
+  testByIdController,
+  testController,
+} from './test.controller.js';
 
 /**
  * Express router for the test endpoints.
  *
- * A request to the base path or to a path with an `id` segment returns a
- * simulated HTTP response configured through the query string (status code,
- * payload and delay).
+ * Handles simulated HTTP responses configured through the query string
+ * (status code, payload and delay). The base path and the `:id` path accept
+ * GET; the `:id` path additionally accepts PUT, PATCH and DELETE, which echo
+ * the request method in the response payload.
  *
  * @type {import('express').Router}
  */
@@ -37,5 +44,41 @@ router.get('/', testController);
  * @see testByIdController
  */
 router.get('/:id', testByIdController);
+
+/**
+ * PUT /test/:id
+ *
+ * Same simulated-response behaviour as `GET /test/:id`, but the response
+ * payload also reflects the request method (`PUT`).
+ *
+ * @name putTestById
+ * @path {PUT} /:id
+ * @see putTestByIdController
+ */
+router.put('/:id', putTestByIdController);
+
+/**
+ * PATCH /test/:id
+ *
+ * Same simulated-response behaviour as `GET /test/:id`, but the response
+ * payload also reflects the request method (`PATCH`).
+ *
+ * @name patchTestById
+ * @path {PATCH} /:id
+ * @see patchTestByIdController
+ */
+router.patch('/:id', patchTestByIdController);
+
+/**
+ * DELETE /test/:id
+ *
+ * Same simulated-response behaviour as `GET /test/:id`, but the response
+ * payload also reflects the request method (`DELETE`).
+ *
+ * @name deleteTestById
+ * @path {DELETE} /:id
+ * @see deleteTestByIdController
+ */
+router.delete('/:id', deleteTestByIdController);
 
 export default router;

@@ -72,44 +72,88 @@ async function testController1(req, res) {
 const testController = asyncHandler(testController1);
 
 /**
- * Handles a request to the `test/:id` endpoint.
+ * Creates an Express handler for the id-based test endpoints (`/test/:id`).
  *
- * Behaves exactly like the base test endpoint — the query string is validated
- * by {@link validateTestQuery} and the simulated response is produced by
- * {@link executeTest} — but the `id` path segment is also validated by
- * {@link validateTestId} and echoed back in the response payload.
+ * The returned handler validates the `id` path segment via
+ * {@link validateTestId}, validates the query string via
+ * {@link validateTestQuery}, executes the simulated response through
+ * {@link executeTest}, and echoes `id` back in the response payload. When a
+ * `method` is supplied it is echoed too, which is what distinguishes the
+ * mutating verbs (PUT, PATCH, DELETE) from the GET variant.
  *
- * @async
- * @function
- * @param {import('express').Request} req - The incoming Express request.
- *    `req.params.id` is validated by {@link validateTestId}; `req.query` is
- *    validated by {@link validateTestQuery}; `req.abortSignal` is forwarded to
- *    the service so the simulated delay is cancelled if the client disconnects.
- * @param {import('express').Response} res - The Express response object.
- * @returns {Promise<import('express').Response>} Resolves once the response has been sent.
+ * The returned handler must still be wrapped with {@link asyncHandler} so
+ * rejected promises — validation failures or aborted requests — reach the
+ * Express error-handling middleware.
+ *
+ * @function makeTestByIdHandler
+ * @param {string} [method] - HTTP method to echo in the response payload.
+ *    Omit it for endpoints that should not reflect a method (e.g. GET).
+ * @returns {function(
+ *    req: import('express').Request,
+ *    res: import('express').Response,
+ *  ): Promise<import('express').Response>} The id-based request handler.
  */
-async function testByIdController1(req, res) {
-  const id = validateTestId(req.params.id);
+function makeTestByIdHandler(method) {
+  return async function handleTestById(req, res) {
+    const id = validateTestId(req.params.id);
 
-  const input = validateTestQuery(req.query);
+    const input = validateTestQuery(req.query);
 
-  const result = await executeTest({
-    ...input,
-    signal: req.abortSignal,
-  });
+    const result = await executeTest({
+      ...input,
+      signal: req.abortSignal,
+    });
 
-  return sendTestResult(res, result, { id });
+    return sendTestResult(res, result, {
+      id,
+      ...(method ? { method } : {}),
+    });
+  };
 }
 
 /**
- * Express request handler for the `test/:id` endpoint.
+ * Express request handler for `GET /test/:id`.
  *
- * Wrapped with {@link asyncHandler} so rejected promises — validation
- * failures or aborted requests — are forwarded to the Express error-handling
- * middleware automatically.
+ * Validates and echoes `id` in the response payload.
  *
  * @type {import('express').RequestHandler}
  */
-const testByIdController = asyncHandler(testByIdController1);
+const testByIdController = asyncHandler(makeTestByIdHandler());
 
-export { testByIdController, testController };
+/**
+ * Express request handler for `PUT /test/:id`.
+ *
+ * Same behavior as the GET variant, but also echoes `PUT` in the response
+ * payload.
+ *
+ * @type {import('express').RequestHandler}
+ */
+const putTestByIdController = asyncHandler(makeTestByIdHandler('PUT'));
+
+/**
+ * Express request handler for `PATCH /test/:id`.
+ *
+ * Same behavior as the GET variant, but also echoes `PATCH` in the response
+ * payload.
+ *
+ * @type {import('express').RequestHandler}
+ */
+const patchTestByIdController = asyncHandler(makeTestByIdHandler('PATCH'));
+
+/**
+ * Express request handler for `DELETE /test/:id`.
+ *
+ * Same behavior as the GET variant, but also echoes `DELETE` in the response
+ * payload.
+ *
+ * @type {import('express').RequestHandler}
+ */
+const deleteTestByIdController = asyncHandler(makeTestByIdHandler('DELETE'));
+
+export {
+  deleteTestByIdController,
+  patchTestByIdController,
+  putTestByIdController,
+  testByIdController,
+  testController,
+};
