@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { testController } from './test.controller.js';
+import { testByIdController, testController } from './test.controller.js';
 
 /**
- * Express router for the test endpoint.
+ * Express router for the test endpoints.
  *
- * A request to the base path returns a simulated HTTP response configured
- * through the query string (status code, payload and delay).
+ * A request to the base path or to a path with an `id` segment returns a
+ * simulated HTTP response configured through the query string (status code,
+ * payload and delay).
  *
  * @type {import('express').Router}
  */
@@ -23,5 +24,18 @@ const router = Router();
  * @see testController
  */
 router.get('/', testController);
+
+/**
+ * GET /test/:id
+ *
+ * Same simulated-response behaviour as `GET /test`, but the `id` path segment
+ * is validated by {@link validateTestId} and echoed back in the response
+ * payload.
+ *
+ * @name getTestById
+ * @path {GET} /:id
+ * @see testByIdController
+ */
+router.get('/:id', testByIdController);
 
 export default router;

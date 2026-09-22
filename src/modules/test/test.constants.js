@@ -55,3 +55,31 @@ export const ALLOWED_STATUS_CODES = new Set([
   // Server errors
   500, 501, 502, 503, 504,
 ]);
+
+/**
+ * Hard limits imposed on the `id` path parameter of the `/test/:id` endpoint.
+ *
+ * @typedef {Object} TestIdLimits
+ * @property {number} MIN_LENGTH - Minimum accepted length in characters.
+ * @property {number} MAX_LENGTH - Maximum accepted length in characters.
+ */
+
+/**
+ * Hard limits imposed on the `id` path parameter of the `/test/:id` endpoint.
+ *
+ * @type {TestIdLimits}
+ */
+export const TEST_ID_LIMITS = Object.freeze({
+  MIN_LENGTH: 1,
+  MAX_LENGTH: 64,
+});
+
+/**
+ * Accepted character set for the `id` path parameter.
+ *
+ * Kept conservative so the identifier stays URL-safe and always renders as a
+ * single, unambiguous path segment.
+ *
+ * @type {RegExp}
+ */
+export const TEST_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
