@@ -4,6 +4,11 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import requestIp from 'request-ip';
 
+import { requestAbortMiddleware } from './middlewares/request-abort.middleware.js';
+import { errorHandler } from './middlewares/error.middleware.js';
+import healthCheckRouter from './routes/healthCheck.route.js';
+import testRouter from './modules/test/test.routes.js';
+
 const app = express();
 
 morgan.token('custom-time', () => {
@@ -16,10 +21,16 @@ const customLoggingFormat =
   ':custom-time - :method :url :status :response-time ms';
 
 // cors middleware
+// app.use(
+//   cors({
+//     origin: process.env.CORS_ORIGIN,
+//     credentials: true,
+//   }),
+// );
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
-    credentials: true,
+    origin: '*', // Allows any requesting origin
   }),
 );
 
@@ -31,13 +42,6 @@ app.use(cookieParser());
 app.use(morgan(customLoggingFormat));
 app.use(requestIp.mw());
 app.use(requestAbortMiddleware);
-
-// routes import
-import { errorHandler } from './middlewares/error.middleware.js';
-import healthCheckRouter from './routes/healthCheck.route.js';
-import testRouter from './modules/test/test.routes.js';
-import { requestAbortMiddleware } from './middlewares/request-abort.middleware.js';
-// import x from "./routes/";
 
 // routes declaration
 app.use('/api/v1/healthCheck', healthCheckRouter);
