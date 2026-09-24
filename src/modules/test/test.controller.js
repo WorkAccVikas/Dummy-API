@@ -37,11 +37,32 @@ function sendTestResult(res, result, extra = {}) {
   );
 }
 
+const DOCUMENTED_QUERY_KEYS = new Set(['delay', 'statusCode', 'payload']);
+
+/**
+ * Collects the optional search query parameters from the raw query string.
+ *
+ * Any parameter other than the documented ones (`delay`, `statusCode`,
+ * `payload`) is treated as an optional search parameter. Only the parameters
+ * the client actually passed are returned; when none are passed an empty
+ * object is returned so the response payload is left untouched.
+ *
+ * @param {object} query - The raw query string (`req.query`) from the HTTP request.
+ * @returns {Record<string, string|string[]>} The extra query parameters, keyed by name.
+ */
+function extractSearchParams(query) {
+  return Object.fromEntries(
+    Object.entries(query).filter(([key]) => !DOCUMENTED_QUERY_KEYS.has(key)),
+  );
+}
+
 /**
  * Handles a request to the test endpoint.
  *
  * Validates the query string, delegates the simulated response to
  * `executeTest`, and writes the result to the client via {@link sendTestResult}.
+ * Any optional search query parameters the client supplies are merged into the
+ * existing response payload; without them the payload is unchanged.
  *
  * @async
  * @function
@@ -60,7 +81,7 @@ async function testController1(req, res) {
     signal: req.abortSignal,
   });
 
-  return sendTestResult(res, result);
+  return sendTestResult(res, result, extractSearchParams(req.query));
 }
 
 /**
